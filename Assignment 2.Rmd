@@ -1,0 +1,203 @@
+---
+title: "Assignment 2"
+author: "Tareq Al Hossain Tomal"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: cerulean
+    toc: true
+    toc_float: true
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE, warning = FALSE, message = FALSE)
+```
+
+#install.packages("readr")  
+#install.packages("ggplot2") 
+#install.packages("knitr")
+#install.packages("tidyverse")
+#install.packages("naniar")
+#install.packages("writexl")
+
+
+
+# Packages
+
+Loading required packages:
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+library(knitr)
+library(ggplot2)
+library(dplyr)
+library(readr)
+library(tidyverse)
+library(naniar)
+library(writexl)
+```
+
+------------------------------------------------------------------------
+
+# Import the Data
+
+```{r}
+data <- read.csv("Kaggle - Pima Indians Diabetes Database.csv")
+head(data)
+
+```
+
+Here is what the columns in the data mean:
+
+| Column | Details |
+|--|----|
+| Pregnancies | Number of times pregnant |
+| Glucose | Plasma glucose concentration a 2 hours in an oral glucose tolerance test |
+| BloodPressure | Diastolic blood pressure (mm Hg) |
+| SkinThickness | Triceps skin fold thickness (mm) |
+| Insulin | 2-Hour serum insulin (mu U/ml) |
+| BMI | Body mass index (weight in kg/(height in m)\^2) |
+| DiabetesPedigreeFunction | Diabetes pedigree function |
+| Age | Age (years) |
+| Outcome | Class variable (0=No or 1=Yes) |
+
+------------------------------------------------------------------------
+
+## Question 1 (10 marks)
+
+**`Outcome` is a categorical variable, 1 means Yes, 0 means No. So, convert it into a factor data type. Now, calculate mean, standard deviation, minimum, 1st quartile, median, 3rd quartile, maximum, and inter-quartile range of all the numeric columns in the dataset. Do you see any anomalies? Write your comment.**
+
+```{r}
+
+colnames(data) <- make.names(colnames(data), unique = TRUE)
+
+
+data$Outcome <- as.factor(data$Outcome)
+
+numeric_summary <- data %>%
+  select(-Outcome) %>%  # Exclude Outcome column
+  summarise_all(list(
+    mean = ~mean(. , na.rm = TRUE),
+    sd = ~sd(. , na.rm = TRUE),
+    min = ~min(. , na.rm = TRUE),
+    q1 = ~quantile(. , 0.25, na.rm = TRUE),
+    median = ~median(. , na.rm = TRUE),
+    q3 = ~quantile(. , 0.75, na.rm = TRUE),
+    max = ~max(. , na.rm = TRUE),
+    iqr = ~IQR(. , na.rm = TRUE)
+  ))
+
+# View the summary statistics
+numeric_summary
+
+
+```
+
+
+
+**How many people have Outcome = Yes?**
+
+```{r}
+outcome_yes_count <- sum(data$Outcome == 1)
+
+
+outcome_yes_count
+
+
+```
+
+
+## Question 2 (40 marks)
+
+**Create histograms for all the numeric variables in the data using ggplot2.**
+
+
+```{r}
+
+data_long <- data %>%
+  select(-Outcome) %>% 
+  gather(key = "Variable", value = "Value")
+
+
+ggplot(data_long, aes(x = Value)) +
+  geom_histogram(binwidth = 10, fill = "skyblue", color = "black", alpha = 0.7) +
+  facet_wrap(~ Variable, scales = "free", ncol = 3) +
+  theme_minimal() +
+  labs(title = "Histograms of Numeric Variables", x = "Value", y = "Frequency")
+
+
+
+```
+
+## Question 3 (20 marks)
+
+**Create boxplot of Glucose, Insulin, BMI, and Age by Outcome using ggplot2.**
+
+```{r}
+ggplot(data, aes(x = Outcome, y = Glucose, fill = Outcome)) +
+  geom_boxplot() +
+  labs(title = "Boxplot of Glucose by Outcome", x = "Outcome", y = "Glucose") +
+  theme_minimal()
+
+ggplot(data, aes(x = Outcome, y = Insulin, fill = Outcome)) +
+  geom_boxplot() +
+  labs(title = "Boxplot of Insulin by Outcome", x = "Outcome", y = "Insulin") +
+  theme_minimal()
+
+ggplot(data, aes(x = Outcome, y = BMI, fill = Outcome)) +
+  geom_boxplot() +
+  labs(title = "Boxplot of BMI by Outcome", x = "Outcome", y = "BMI") +
+  theme_minimal()
+
+ggplot(data, aes(x = Outcome, y = Age, fill = Outcome)) +
+  geom_boxplot() +
+  labs(title = "Boxplot of Age by Outcome", x = "Outcome", y = "Age") +
+  theme_minimal()
+
+
+```
+
+
+## Question 4 (10 marks)
+
+**Replace 0 with NA in the variables where a value of 0 does not make sense.**
+
+```{r}
+data$Glucose[data$Glucose == 0] <- NA
+data$BloodPressure[data$BloodPressure == 0] <- NA
+data$SkinThickness[data$SkinThickness == 0] <- NA
+data$Insulin[data$Insulin == 0] <- NA
+data$BMI[data$BMI == 0] <- NA
+
+
+summary(data)
+
+
+```
+
+
+## Question 5 (10 marks)
+
+**Use naniar package to inspect number of missing values in the data after replacing 0s with NAs**
+
+```{r}
+gg_miss_var(data)  
+
+miss_summary <- miss_var_summary(data)
+
+miss_summary
+
+
+```
+
+
+## Question 6 (10 marks)
+
+**Export the final cleaned data in an Excel file for later use.**
+
+```{r}
+write_xlsx(data, "cleaned_pima_diabetes_data.xlsx")
+
+```
+
+
